@@ -1,0 +1,337 @@
+.venue-section {
+  padding: 80px 20px;
+  background: linear-gradient(180deg, #0d0d1a, #1a0a2e);
+}
+
+.venue-title {
+  font-family: 'Playfair Display', serif;
+  font-size: 2.2rem;
+  color: #FFD700;
+  text-align: center;
+  margin-bottom: 8px;
+}
+
+.venue-subtitle {
+  text-align: center;
+  color: #bbb;
+  font-size: 1rem;
+  margin-bottom: 35px;
+}
+
+/* ============ TABS ============ */
+.venue-tabs {
+  display: flex;
+  justify-content: center;
+  gap: 15px;
+  margin-bottom: 40px;
+}
+
+.venue-tab {
+  padding: 12px 30px;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(212, 175, 55, 0.2);
+  border-radius: 50px;
+  color: #ccc;
+  font-size: 1rem;
+  font-weight: 500;
+  transition: all 0.3s;
+}
+
+.venue-tab:hover {
+  background: rgba(212, 175, 55, 0.1);
+  color: #FFD700;
+}
+
+.venue-tab.active {
+  background: linear-gradient(135deg, #D4AF37, #B8941F);
+  color: #1a0a2e;
+  font-weight: 600;
+  border-color: transparent;
+  box-shadow: 0 4px 20px rgba(212, 175, 55, 0.4);
+}
+
+/* ============ GRID LAYOUT ============ */
+.venue-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 30px;
+  max-width: 1100px;
+  margin: 0 auto;
+}
+
+/* ============ DETAILS CARD ============ */
+.venue-details-card {
+  background: linear-gradient(135deg, #1e1240, #2d1b69);
+  border: 1px solid rgba(212, 175, 55, 0.2);
+  border-radius: 20px;
+  padding: 30px;
+  box-shadow: 0 8px 30px rgba(0, 0, 0, 0.3);
+}
+
+.venue-card-title {
+  font-family: 'Playfair Display', serif;
+  font-size: 1.5rem;
+  color: #FFD700;
+  margin-bottom: 5px;
+}
+
+.venue-name {
+  font-family: 'Playfair Display', serif;
+  font-size: 1.2rem;
+  color: #fff;
+  margin-bottom: 25px;
+  padding-bottom: 15px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.venue-info-list {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+  margin-bottom: 25px;
+}
+
+.venue-info-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+}
+
+.venue-icon {
+  color: #D4AF37;
+  font-size: 1.1rem;
+  margin-top: 3px;
+  flex-shrink: 0;
+}
+
+.info-label {
+  display: block;
+  font-size: 0.75rem;
+  color: #999;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  margin-bottom: 2px;
+}
+
+.info-value {
+  font-size: 0.95rem;
+  color: #ddd;
+  line-height: 1.4;
+}
+
+.info-value a {
+  color: #D4AF37;
+  text-decoration: none;
+}
+
+.info-value a:hover {
+  text-decoration: underline;
+}
+
+.copy-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  margin-top: 6px;
+  padding: 4px 10px;
+  background: rgba(212, 175, 55, 0.15);
+  color: #D4AF37;
+  border-radius: 6px;
+  font-size: 0.75rem;
+  transition: all 0.2s;
+}
+
+.copy-btn:hover {
+  background: rgba(212, 175, 55, 0.3);
+}
+
+/* Action Buttons */
+.venue-actions {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.direction-btn {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 12px 20px;
+  background: linear-gradient(135deg, #D4AF37, #B8941F);
+  color: #1a0a2e;
+  border-radius: 12px;
+  font-size: 0.95rem;
+  font-weight: 600;
+  transition: all 0.3s;
+  box-shadow: 0 4px 15px rgba(212, 175, 55, 0.3);
+}
+
+.direction-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 25px rgba(212, 175, 55, 0.5);
+}
+
+.share-btn {
+  flex: 1;
+  padding: 12px 20px;
+  background: rgba(37, 211, 102, 0.15);
+  color: #25D366;
+  border: 1px solid rgba(37, 211, 102, 0.3);
+  border-radius: 12px;
+  font-size: 0.95rem;
+  font-weight: 500;
+  transition: all 0.3s;
+}
+
+.share-btn:hover {
+  background: rgba(37, 211, 102, 0.25);
+  transform: translateY(-2px);
+}
+
+/* ============ MAP CARD ============ */
+.venue-map-card {
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
+}
+
+.map-container {
+  width: 100%;
+  height: 380px;
+  border-radius: 20px;
+  overflow: hidden;
+  border: 2px solid rgba(212, 175, 55, 0.2);
+  box-shadow: 0 8px 30px rgba(0, 0, 0, 0.3);
+}
+
+.map-container iframe {
+  display: block;
+}
+
+.map-quick-info {
+  display: flex;
+  gap: 15px;
+}
+
+.quick-info-item {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 15px;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 12px;
+  color: #ccc;
+  font-size: 0.85rem;
+}
+
+.quick-info-item svg {
+  color: #D4AF37;
+}
+
+/* ============ NEARBY HOTELS ============ */
+.nearby-section {
+  max-width: 1100px;
+  margin: 50px auto 0;
+  text-align: center;
+}
+
+.nearby-title {
+  font-family: 'Playfair Display', serif;
+  font-size: 1.3rem;
+  color: #FFD700;
+  margin-bottom: 25px;
+}
+
+.nearby-hotels {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 15px;
+}
+
+.hotel-card {
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 14px;
+  padding: 20px;
+  text-align: center;
+  transition: all 0.3s;
+}
+
+.hotel-card:hover {
+  border-color: rgba(212, 175, 55, 0.3);
+  transform: translateY(-3px);
+}
+
+.hotel-icon {
+  font-size: 1.5rem;
+  color: #D4AF37;
+  margin-bottom: 10px;
+}
+
+.hotel-card h5 {
+  color: #fff;
+  font-size: 1rem;
+  margin-bottom: 5px;
+}
+
+.hotel-card p {
+  color: #999;
+  font-size: 0.85rem;
+}
+
+.hotel-price {
+  color: #D4AF37 !important;
+  font-weight: 600;
+  margin-top: 5px;
+}
+
+/* ============ RESPONSIVE ============ */
+@media (max-width: 768px) {
+  .venue-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .map-container {
+    height: 300px;
+  }
+
+  .nearby-hotels {
+    grid-template-columns: 1fr;
+  }
+
+  .venue-actions {
+    flex-direction: column;
+  }
+
+  .venue-tabs {
+    flex-direction: column;
+    align-items: center;
+  }
+
+  .venue-tab {
+    width: 200px;
+    text-align: center;
+  }
+}
+
+@media (max-width: 480px) {
+  .venue-title {
+    font-size: 1.6rem;
+  }
+
+  .venue-details-card {
+    padding: 20px;
+  }
+
+  .map-container {
+    height: 250px;
+  }
+
+  .map-quick-info {
+    flex-direction: column;
+  }
+}
