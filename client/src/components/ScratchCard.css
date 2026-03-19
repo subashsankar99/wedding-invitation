@@ -24,6 +24,10 @@
   line-height: 1.6;
 }
 
+.scratch-canvas {
+  touch-action: none;
+}
+
 .scratch-card-wrapper {
   perspective: 1000px;
   width: 100%;
