@@ -14,6 +14,7 @@ const ScratchCard = ({ revealData }) => {
 
   const REVEAL_THRESHOLD = 50;
 
+  // ✅ Resize + redraw canvas
   useEffect(() => {
     const handleResize = () => {
       setWindowSize({
@@ -21,54 +22,52 @@ const ScratchCard = ({ revealData }) => {
         height: window.innerHeight
       });
 
-      const canvas = canvasRef.current;
-      if (!canvas) return;
-
-      const ctx = canvas.getContext('2d');
-      canvas.width = canvas.offsetWidth;
-      canvas.height = canvas.offsetHeight;
-
-      const gradient = ctx.createLinearGradient(0, 0, canvas.width, canvas.height);
-      gradient.addColorStop(0, '#D4AF37');
-      gradient.addColorStop(0.3, '#F5E6A3');
-      gradient.addColorStop(0.6, '#D4AF37');
-      gradient.addColorStop(1, '#B8941F');
-      ctx.fillStyle = gradient;
-      ctx.fillRect(0, 0, canvas.width, canvas.height);
-
-      ctx.strokeStyle = 'rgba(139, 105, 20, 0.3)';
-      ctx.lineWidth = 1;
-      for (let i = 0; i < canvas.width; i += 20) {
-        ctx.beginPath();
-        ctx.moveTo(i, 0);
-        ctx.lineTo(i, canvas.height);
-        ctx.stroke();
-      }
-      for (let i = 0; i < canvas.height; i += 20) {
-        ctx.beginPath();
-        ctx.moveTo(0, i);
-        ctx.lineTo(canvas.width, i);
-        ctx.stroke();
-      }
-
-      ctx.font = 'bold 22px Playfair Display, Georgia, serif';
-      ctx.fillStyle = '#8B6914';
-      ctx.textAlign = 'center';
-      ctx.textBaseline = 'middle';
-      ctx.fillText('✨ Scratch to Reveal ✨', canvas.width / 2, canvas.height / 2 - 15);
-
-      /* ctx.font = '14px Poppins, sans-serif';
-      ctx.fillStyle = '#9B7920';
-      ctx.fillText('Use mouse or finger 👆', canvas.width / 2, canvas.height / 2 + 20); */
+      drawCanvas();
     };
 
     window.addEventListener('resize', handleResize);
     return () => window.removeEventListener('resize', handleResize);
   }, []);
 
-    
-     useEffect(() => {
+  // ✅ Initial draw
+  useEffect(() => {
+    drawCanvas();
+  }, []);
+
+  // ✅ Prevent touch freeze after scroll
+  useEffect(() => {
     const canvas = canvasRef.current;
+
+    const preventScroll = (e) => {
+      if (isScratching) e.preventDefault();
+    };
+
+    if (canvas) {
+      canvas.addEventListener('touchmove', preventScroll, { passive: false });
+    }
+
+    return () => {
+      if (canvas) {
+        canvas.removeEventListener('touchmove', preventScroll);
+      }
+    };
+  }, [isScratching]);
+
+  // ✅ Reset scratching on scroll (FIX FREEZE BUG)
+  useEffect(() => {
+    const handleScroll = () => {
+      setIsScratching(false);
+    };
+
+    window.addEventListener('scroll', handleScroll);
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, []);
+
+  // ✅ Draw function (reusable)
+  const drawCanvas = () => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+
     const ctx = canvas.getContext('2d');
 
     canvas.width = canvas.offsetWidth;
@@ -79,17 +78,20 @@ const ScratchCard = ({ revealData }) => {
     gradient.addColorStop(0.3, '#F5E6A3');
     gradient.addColorStop(0.6, '#D4AF37');
     gradient.addColorStop(1, '#B8941F');
+
     ctx.fillStyle = gradient;
     ctx.fillRect(0, 0, canvas.width, canvas.height);
 
     ctx.strokeStyle = 'rgba(139, 105, 20, 0.3)';
     ctx.lineWidth = 1;
+
     for (let i = 0; i < canvas.width; i += 20) {
       ctx.beginPath();
       ctx.moveTo(i, 0);
       ctx.lineTo(i, canvas.height);
       ctx.stroke();
     }
+
     for (let i = 0; i < canvas.height; i += 20) {
       ctx.beginPath();
       ctx.moveTo(0, i);
@@ -97,26 +99,23 @@ const ScratchCard = ({ revealData }) => {
       ctx.stroke();
     }
 
-    ctx.font = window.innerWidth <= 480
-      ? 'bold 18px Playfair Display, Georgia, serif'
-      : 'bold 22px Playfair Display, Georgia, serif';
+    ctx.font =
+      window.innerWidth <= 480
+        ? 'bold 18px Playfair Display, Georgia, serif'
+        : 'bold 22px Playfair Display, Georgia, serif';
+
     ctx.fillStyle = '#8B6914';
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
     ctx.fillText('✨ Scratch to Reveal ✨', canvas.width / 2, canvas.height / 2 - 15);
-
-    ctx.font = window.innerWidth <= 480
-      ? '12px Poppins, sans-serif'
-      : '14px Poppins, sans-serif';
-    ctx.fillStyle = '#9B7920';
-   // ctx.fillText('Use mouse or finger 👆', canvas.width / 2, canvas.height / 2 + 20);
-  }, []);
+  };
 
   const calculateScratchPercentage = useCallback(() => {
     const canvas = canvasRef.current;
     const ctx = canvas.getContext('2d');
     const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
     const pixels = imageData.data;
+
     let transparentPixels = 0;
     const totalPixels = pixels.length / 4;
 
@@ -127,63 +126,80 @@ const ScratchCard = ({ revealData }) => {
     return (transparentPixels / totalPixels) * 100;
   }, []);
 
-  const scratch = useCallback((x, y) => {
-    if (isRevealed) return;
-    const canvas = canvasRef.current;
-    const ctx = canvas.getContext('2d');
-    const rect = canvas.getBoundingClientRect();
+  const scratch = useCallback(
+    (x, y) => {
+      if (isRevealed) return;
 
-    const scratchX = x - rect.left;
-    const scratchY = y - rect.top;
+      const canvas = canvasRef.current;
+      const ctx = canvas.getContext('2d');
+      const rect = canvas.getBoundingClientRect();
 
-    ctx.globalCompositeOperation = 'destination-out';
+      const scratchX = x - rect.left;
+      const scratchY = y - rect.top;
 
-    ctx.beginPath();
-    ctx.arc(scratchX, scratchY, 28, 0, Math.PI * 2);
-    ctx.fill();
+      ctx.globalCompositeOperation = 'destination-out';
 
-    for (let i = 0; i < 3; i++) {
       ctx.beginPath();
-      ctx.arc(
-        scratchX + (Math.random() - 0.5) * 20,
-        scratchY + (Math.random() - 0.5) * 20,
-        15,
-        0,
-        Math.PI * 2
-      );
+      ctx.arc(scratchX, scratchY, 26, 0, Math.PI * 2);
       ctx.fill();
-    }
 
-    const percentage = calculateScratchPercentage();
-    setScratchPercentage(percentage);
+      for (let i = 0; i < 3; i++) {
+        ctx.beginPath();
+        ctx.arc(
+          scratchX + (Math.random() - 0.5) * 20,
+          scratchY + (Math.random() - 0.5) * 20,
+          12,
+          0,
+          Math.PI * 2
+        );
+        ctx.fill();
+      }
 
-    if (percentage > REVEAL_THRESHOLD && !isRevealed) {
-      setIsRevealed(true);
-      setScratchPercentage(100);
+      const percentage = calculateScratchPercentage();
+      setScratchPercentage(percentage);
 
-      setTimeout(() => {
-        ctx.clearRect(0, 0, canvas.width, canvas.height);
-      }, 180);
-    }
-  }, [isRevealed, calculateScratchPercentage]);
+      if (percentage > REVEAL_THRESHOLD && !isRevealed) {
+        setIsRevealed(true);
+        setScratchPercentage(100);
 
+        setTimeout(() => {
+          ctx.clearRect(0, 0, canvas.width, canvas.height);
+        }, 180);
+      }
+    },
+    [isRevealed, calculateScratchPercentage]
+  );
+
+  // ✅ Mouse handlers
   const handleMouseDown = () => setIsScratching(true);
   const handleMouseUp = () => setIsScratching(false);
+
   const handleMouseMove = (e) => {
     if (isScratching) scratch(e.clientX, e.clientY);
   };
 
-  const handleTouchStart = () => setIsScratching(true);
-  const handleTouchEnd = () => setIsScratching(false);
+  // ✅ FIXED TOUCH HANDLERS (CRITICAL)
+  const handleTouchStart = (e) => {
+    setIsScratching(true);
+    const touch = e.touches[0];
+    scratch(touch.clientX, touch.clientY);
+  };
+
   const handleTouchMove = (e) => {
+    if (!isScratching) return;
     e.preventDefault();
     const touch = e.touches[0];
     scratch(touch.clientX, touch.clientY);
   };
 
+  const handleTouchEnd = () => {
+    setIsScratching(false);
+  };
+
   return (
     <section className="scratch-card-section" id="scratch">
       <h2 className="section-title">🎊 Reveal Our Special Date 🎊</h2>
+
       <p className="section-subtitle">
         Scratch the golden card below to unveil when we say "I Do"
       </p>
@@ -232,10 +248,10 @@ const ScratchCard = ({ revealData }) => {
         <Confetti
           width={windowSize.width}
           height={windowSize.height}
-          numberOfPieces={400}
+          numberOfPieces={300}
           recycle={false}
           gravity={0.15}
-          colors={['#D4AF37', '#FF6B6B', '#FF69B4', '#FFD700', '#FFF', '#C0392B']}
+          colors={['#D4AF37', '#FF6B6B', '#FF69B4', '#FFD700', '#FFF']}
         />
       )}
     </section>
