@@ -16,6 +16,9 @@ concurrency:
 jobs:
   build:
     runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: ./frontend    # ← Change this to your folder name
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -24,7 +27,6 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: 20
-          # ← removed "cache: npm" line
 
       - name: Install dependencies
         run: npm install
@@ -40,7 +42,7 @@ jobs:
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3
         with:
-          path: './dist'
+          path: './frontend/dist'    # ← Full path from repo root
 
   deploy:
     environment:
