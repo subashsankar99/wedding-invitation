@@ -3,18 +3,16 @@ import axios from 'axios';
 import { motion, AnimatePresence } from 'framer-motion';
 import './WishBoard.css';
 
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
+// Use live backend URL from .env
+const API_URL = import.meta.env.VITE_API_URL || 'https://wedding-invitation-90op.onrender.com/api';
 
 const EMOJI_OPTIONS = ['💝', '🎉', '💒', '🥂', '💐', '✨', '🎊', '💕'];
 const RELATION_OPTIONS = ['Family', 'Friend', 'Colleague', 'Other'];
 
-// ── NEW: max wishes to display on page ──
 const MAX_DISPLAY_WISHES = 10;
-
-// ── NEW: character thresholds for text sizing ──
-const TEXT_MEDIUM = 100;  // above 100 chars → medium text
-const TEXT_SMALL = 200;   // above 200 chars → small text
-const TEXT_TINY = 350;    // above 350 chars → tiny text
+const TEXT_MEDIUM = 100;
+const TEXT_SMALL = 200;
+const TEXT_TINY = 350;
 
 const WishBoard = () => {
   const [wishes, setWishes] = useState([]);
@@ -55,6 +53,7 @@ const WishBoard = () => {
       setTimeout(() => setShowSuccess(false), 3000);
     } catch (error) {
       alert('Could not submit wish. Please try again.');
+      console.error(error);
     } finally {
       setSubmitting(false);
     }
@@ -64,7 +63,6 @@ const WishBoard = () => {
     setFormData(prev => ({ ...prev, [e.target.name]: e.target.value }));
   };
 
-  // ── NEW: helper to get text size class based on message length ──
   const getMessageSizeClass = (message) => {
     const len = message.length;
     if (len > TEXT_TINY) return 'wish-message-tiny';
@@ -73,7 +71,6 @@ const WishBoard = () => {
     return '';
   };
 
-  // ── NEW: only show latest 10 wishes ──
   const displayedWishes = wishes.slice(0, MAX_DISPLAY_WISHES);
 
   return (
@@ -81,10 +78,7 @@ const WishBoard = () => {
       <h2 className="wb-title">💌 Wish the Couple 💌</h2>
       <p className="wb-subtitle">Leave your blessings and warm wishes</p>
 
-      {/* Wish Form */}
       <form className="wish-form" onSubmit={handleSubmit}>
-
-        {/* Name input row */}
         <div className="wish-name-row">
           <input
             type="text"
@@ -98,7 +92,6 @@ const WishBoard = () => {
           />
         </div>
 
-        {/* Relation buttons */}
         <div className="relation-picker">
           <span className="relation-label">You are:</span>
           <div className="relation-options">
@@ -150,7 +143,6 @@ const WishBoard = () => {
         </button>
       </form>
 
-      {/* Success Message */}
       <AnimatePresence>
         {showSuccess && (
           <motion.div
@@ -164,7 +156,6 @@ const WishBoard = () => {
         )}
       </AnimatePresence>
 
-      {/* ── CHANGED: Show only latest 10 wishes ── */}
       <div className="wishes-grid">
         <AnimatePresence>
           {displayedWishes.map((wish, index) => (
@@ -177,12 +168,9 @@ const WishBoard = () => {
               whileHover={{ scale: 1.03 }}
             >
               <span className="wish-emoji">{wish.emoji}</span>
-
-              {/* ── CHANGED: Dynamic text size based on message length ── */}
               <p className={`wish-message ${getMessageSizeClass(wish.message)}`}>
                 &ldquo;{wish.message}&rdquo;
               </p>
-
               <div className="wish-footer">
                 <strong>{wish.guestName}</strong>
                 <span className="wish-relation">{wish.relation}</span>
@@ -195,7 +183,6 @@ const WishBoard = () => {
         </AnimatePresence>
       </div>
 
-      {/* ── NEW: Show count if more wishes exist in DB ── */}
       {wishes.length > MAX_DISPLAY_WISHES && (
         <p className="wishes-more-text">
           💝 +{wishes.length - MAX_DISPLAY_WISHES} more blessings received!
