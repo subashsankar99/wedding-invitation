@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect, useCallback } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import {
   FaMusic,
   FaPlay,
@@ -12,7 +12,7 @@ import './MusicPlayer.css';
 const TRACK = {
   name: 'Shehnai',
   artist: 'Wedding Classic',
-  file: `${process.env.PUBLIC_URL}/audio/shehnai.mp3`,
+  file: '/audio/shehnai.mp3',  // ✅ Simple path - no process.env.PUBLIC_URL
   emoji: '🎺'
 };
 
@@ -69,22 +69,16 @@ const MusicPlayer = () => {
       setError(errorMessages[audio.error?.code] || 'Failed to load audio');
     };
 
-    const handleLoadStart = () => {
-      console.log('🔄 Loading audio from:', audio.src);
-    };
-
     audio.addEventListener('timeupdate', handleTimeUpdate);
     audio.addEventListener('loadedmetadata', handleLoadedMetadata);
     audio.addEventListener('canplaythrough', handleCanPlayThrough);
     audio.addEventListener('error', handleError);
-    audio.addEventListener('loadstart', handleLoadStart);
 
     return () => {
       audio.removeEventListener('timeupdate', handleTimeUpdate);
       audio.removeEventListener('loadedmetadata', handleLoadedMetadata);
       audio.removeEventListener('canplaythrough', handleCanPlayThrough);
       audio.removeEventListener('error', handleError);
-      audio.removeEventListener('loadstart', handleLoadStart);
     };
   }, []);
 
@@ -103,7 +97,6 @@ const MusicPlayer = () => {
         console.log('⚠️ Autoplay blocked:', err.message);
         setShowPrompt(true);
         
-        // Try on first user interaction
         const playOnInteraction = async () => {
           try {
             await audio.play();
@@ -121,7 +114,6 @@ const MusicPlayer = () => {
       }
     };
 
-    // Wait a bit before attempting autoplay
     const timer = setTimeout(attemptPlay, 1000);
     return () => clearTimeout(timer);
   }, []);
