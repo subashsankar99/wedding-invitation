@@ -12,7 +12,8 @@ import './MusicPlayer.css';
 const TRACK = {
   name: 'Shehnai',
   artist: 'Wedding Classic',
-  file: '/audio/shehnai.mp3',  // ✅ Simple path - no process.env.PUBLIC_URL
+  // ✅ Direct GitHub Release URL
+  file: 'https://github.com/subashsankar99/wedding-invitation/releases/download/v1.0/shehnai.mp3',
   emoji: '🎺'
 };
 
@@ -27,6 +28,7 @@ const MusicPlayer = () => {
   const [duration, setDuration] = useState('0:00');
   const [showPrompt, setShowPrompt] = useState(true);
   const [error, setError] = useState(null);
+  const [isLoaded, setIsLoaded] = useState(false);
 
   const formatTime = (seconds) => {
     if (isNaN(seconds)) return '0:00';
@@ -35,6 +37,7 @@ const MusicPlayer = () => {
     return `${mins}:${secs.toString().padStart(2, '0')}`;
   };
 
+  // ─── Audio event listeners ───
   useEffect(() => {
     const audio = audioRef.current;
     if (!audio) return;
@@ -50,23 +53,31 @@ const MusicPlayer = () => {
 
     const handleLoadedMetadata = () => {
       setDuration(formatTime(audio.duration));
-      console.log('✅ Audio loaded successfully');
+      setIsLoaded(true);
+      setError(null);
+      console.log('✅ Audio metadata loaded. Duration:', formatTime(audio.duration));
     };
 
     const handleCanPlayThrough = () => {
-      console.log('✅ Audio ready to play');
+      console.log('✅ Audio ready to play through');
+      setIsLoaded(true);
       setError(null);
     };
 
-    const handleError = (e) => {
-      console.error('❌ Audio error:', audio.error);
+    const handleError = () => {
+      const errorCode = audio.error?.code;
       const errorMessages = {
-        1: 'Audio loading aborted',
-        2: 'Network error while loading audio',
-        3: 'Audio decoding failed',
-        4: 'Audio format not supported'
+        1: 'Audio loading was aborted.',
+        2: 'Network error while loading audio. Check your connection.',
+        3: 'Audio decoding failed. The file may be corrupted.',
+        4: 'Audio file not found or format not supported.'
       };
-      setError(errorMessages[audio.error?.code] || 'Failed to load audio');
+
+      const message = errorMessages[errorCode] || 'Unknown audio error occurred.';
+      console.error(`❌ Audio error (code ${errorCode}):`, message);
+      setError(message);
+      setIsPlaying(false);
+      setIsLoaded(false);
     };
 
     audio.addEventListener('timeupdate', handleTimeUpdate);
@@ -82,8 +93,10 @@ const MusicPlayer = () => {
     };
   }, []);
 
-  // Auto-play attempt
+  // ─── Auto-play attempt (only after loaded) ───
   useEffect(() => {
+    if (!isLoaded) return;
+
     const attemptPlay = async () => {
       const audio = audioRef.current;
       if (!audio) return;
@@ -96,31 +109,49 @@ const MusicPlayer = () => {
       } catch (err) {
         console.log('⚠️ Autoplay blocked:', err.message);
         setShowPrompt(true);
-        
+
         const playOnInteraction = async () => {
           try {
             await audio.play();
             setIsPlaying(true);
             setShowPrompt(false);
           } catch (e) {
-            console.error('Failed to play:', e);
+            console.error('Failed to play on interaction:', e.message);
           }
-          window.removeEventListener('click', playOnInteraction);
-          window.removeEventListener('touchstart', playOnInteraction);
         };
 
         window.addEventListener('click', playOnInteraction, { once: true });
         window.addEventListener('touchstart', playOnInteraction, { once: true });
+
+        return () => {
+          window.removeEventListener('click', playOnInteraction);
+          window.removeEventListener('touchstart', playOnInteraction);
+        };
       }
     };
 
-    const timer = setTimeout(attemptPlay, 1000);
+    const timer = setTimeout(attemptPlay, 500);
     return () => clearTimeout(timer);
-  }, []);
+  }, [isLoaded]);
 
   const togglePlay = async () => {
     const audio = audioRef.current;
     setShowPrompt(false);
+
+    if (!isLoaded) {
+      try {
+        audio.load();
+        await new Promise((resolve, reject) => {
+          audio.addEventListener('canplaythrough', resolve, { once: true });
+          audio.addEventListener('error', reject, { once: true });
+          setTimeout(reject, 5000);
+        });
+        setIsLoaded(true);
+      } catch (e) {
+        setError('Audio failed to load. Please try again.');
+        return;
+      }
+    }
 
     try {
       if (isPlaying) {
@@ -133,7 +164,7 @@ const MusicPlayer = () => {
       }
     } catch (err) {
       console.error('Play error:', err);
-      setError('Failed to play. Try clicking again.');
+      setError('Failed to play. Click again.');
     }
   };
 
@@ -158,6 +189,7 @@ const MusicPlayer = () => {
 
   const handleProgressClick = (e) => {
     const audio = audioRef.current;
+    if (!isLoaded) return;
     const bar = e.currentTarget;
     const rect = bar.getBoundingClientRect();
     const clickX = e.clientX - rect.left;
@@ -166,19 +198,19 @@ const MusicPlayer = () => {
   };
 
   const togglePanel = () => {
-    setIsPanelOpen(prev => !prev);
+    setIsPanelOpen((prev) => !prev);
     setShowPrompt(false);
   };
 
   return (
     <>
-      <audio 
-        ref={audioRef} 
-        src={TRACK.file}
-        preload="auto"
-      />
+      {/* ✅ crossOrigin needed for external URLs */}
+      <audio ref={audioRef} crossOrigin="anonymous" preload="auto">
+        <source src={TRACK.file} type="audio/mpeg" />
+        Your browser does not support the audio element.
+      </audio>
 
-      {showPrompt && (
+      {showPrompt && !error && (
         <div className="music-prompt" onClick={togglePlay}>
           <span>🎵 Click to Play Wedding Music</span>
           <button
@@ -223,16 +255,38 @@ const MusicPlayer = () => {
         </div>
 
         {error && (
-          <div style={{ 
-            color: '#ff6b6b', 
-            fontSize: '12px', 
-            textAlign: 'center', 
-            padding: '8px',
-            marginBottom: '8px',
-            backgroundColor: 'rgba(255, 107, 107, 0.1)',
-            borderRadius: '4px'
-          }}>
-            ⚠️ {error}
+          <div
+            style={{
+              color: '#ff6b6b',
+              fontSize: '12px',
+              textAlign: 'center',
+              padding: '10px',
+              marginBottom: '8px',
+              backgroundColor: 'rgba(255, 107, 107, 0.1)',
+              borderRadius: '6px',
+              lineHeight: '1.4'
+            }}
+          >
+            <div>⚠️ {error}</div>
+            <button
+              onClick={() => {
+                setError(null);
+                setIsLoaded(false);
+                audioRef.current?.load();
+              }}
+              style={{
+                marginTop: '6px',
+                padding: '4px 12px',
+                fontSize: '11px',
+                background: 'rgba(255,255,255,0.2)',
+                border: '1px solid rgba(255,107,107,0.3)',
+                borderRadius: '4px',
+                color: '#ff6b6b',
+                cursor: 'pointer'
+              }}
+            >
+              🔄 Retry
+            </button>
           </div>
         )}
 
@@ -273,9 +327,7 @@ const MusicPlayer = () => {
         </div>
       </div>
 
-      {isPanelOpen && (
-        <div className="music-overlay" onClick={togglePanel} />
-      )}
+      {isPanelOpen && <div className="music-overlay" onClick={togglePanel} />}
     </>
   );
 };
