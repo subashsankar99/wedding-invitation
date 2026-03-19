@@ -9,17 +9,22 @@ import {
 } from 'react-icons/fa';
 import './MusicPlayer.css';
 
-// Single track with GitHub Release URL
+// Try multiple URLs as fallback
 const TRACK = {
   name: 'Shehnai',
   artist: 'Wedding Classic',
-  file: 'https://github.com/subashsankar99/wedding-invitation/releases/download/v1.0/shehnai.mp3',
+  files: [
+    '/audio/shehnai.mp3', // Try local first
+    'https://cdn.jsdelivr.net/gh/subashsankar99/wedding-invitation@main/public/audio/shehnai.mp3', // Fallback 1
+    'https://raw.githubusercontent.com/subashsankar99/wedding-invitation/main/public/audio/shehnai.mp3' // Fallback 2
+  ],
   emoji: '🎺'
 };
 
 const MusicPlayer = () => {
   const audioRef = useRef(null);
   const hasAutoPlayed = useRef(false);
+  const currentFileIndex = useRef(0);
   const [isPlaying, setIsPlaying] = useState(false);
   const [isPanelOpen, setIsPanelOpen] = useState(false);
   const [volume, setVolume] = useState(0.4);
@@ -39,6 +44,19 @@ const MusicPlayer = () => {
     return `${mins}:${secs.toString().padStart(2, '0')}`;
   };
 
+  // Try next audio source on error
+  const tryNextSource = useCallback(() => {
+    currentFileIndex.current += 1;
+    if (currentFileIndex.current < TRACK.files.length) {
+      console.log(`Trying fallback source ${currentFileIndex.current + 1}...`);
+      audioRef.current.src = TRACK.files[currentFileIndex.current];
+      audioRef.current.load();
+    } else {
+      setError('Unable to load music from any source');
+      setIsLoading(false);
+    }
+  }, []);
+
   // Autoplay on page load
   useEffect(() => {
     const audio = audioRef.current;
@@ -48,11 +66,15 @@ const MusicPlayer = () => {
       if (hasAutoPlayed.current) return;
       hasAutoPlayed.current = true;
 
+      // Wait a bit for the audio to be ready
+      await new Promise(resolve => setTimeout(resolve, 500));
+
       try {
         await audio.play();
         setIsPlaying(true);
         setShowPrompt(false);
         setIsLoading(false);
+        setError(null);
       } catch (err) {
         console.log('Autoplay blocked by browser, waiting for interaction…');
         setIsPlaying(false);
@@ -64,19 +86,19 @@ const MusicPlayer = () => {
             await audio.play();
             setIsPlaying(true);
             setShowPrompt(false);
+            setError(null);
           } catch (e) {
             console.log('Play after interaction failed:', e);
+            setError('Click the play button to start music');
           }
           document.removeEventListener('click', startOnInteraction);
           document.removeEventListener('touchstart', startOnInteraction);
           document.removeEventListener('keydown', startOnInteraction);
-          document.removeEventListener('scroll', startOnInteraction);
         };
 
-        document.addEventListener('click', startOnInteraction, { once: false });
-        document.addEventListener('touchstart', startOnInteraction, { once: false });
-        document.addEventListener('keydown', startOnInteraction, { once: false });
-        document.addEventListener('scroll', startOnInteraction, { once: false });
+        document.addEventListener('click', startOnInteraction, { once: true });
+        document.addEventListener('touchstart', startOnInteraction, { once: true });
+        document.addEventListener('keydown', startOnInteraction, { once: true });
       }
     };
 
@@ -87,7 +109,7 @@ const MusicPlayer = () => {
   useEffect(() => {
     const audio = audioRef.current;
     audio.volume = isMuted ? 0 : volume;
-    audio.loop = true; // Loop the single track continuously
+    audio.loop = true;
 
     const handleTimeUpdate = () => {
       const prog = (audio.currentTime / audio.duration) * 100;
@@ -98,22 +120,41 @@ const MusicPlayer = () => {
     const handleLoadedMetadata = () => {
       setDuration(formatTime(audio.duration));
       setIsLoading(false);
+      console.log('Audio loaded successfully');
     };
 
     const handleCanPlay = () => {
       setIsLoading(false);
       setError(null);
+      console.log('Audio ready to play');
     };
 
     const handleError = (e) => {
-      console.error('Audio loading error:', e);
-      setError('Failed to load music. Please check your connection.');
-      setIsLoading(false);
-      setIsPlaying(false);
+      console.error('Audio error:', e);
+      console.error('Error details:', audio.error);
+      
+      // Try next source if available
+      if (currentFileIndex.current < TRACK.files.length - 1) {
+        tryNextSource();
+      } else {
+        setError('Failed to load music. Please try refreshing the page.');
+        setIsLoading(false);
+        setIsPlaying(false);
+      }
     };
 
     const handleLoadStart = () => {
       setIsLoading(true);
+      console.log('Loading audio from:', audio.src);
+    };
+
+    const handleWaiting = () => {
+      setIsLoading(true);
+    };
+
+    const handlePlaying = () => {
+      setIsLoading(false);
+      setError(null);
     };
 
     audio.addEventListener('timeupdate', handleTimeUpdate);
@@ -121,6 +162,8 @@ const MusicPlayer = () => {
     audio.addEventListener('canplay', handleCanPlay);
     audio.addEventListener('error', handleError);
     audio.addEventListener('loadstart', handleLoadStart);
+    audio.addEventListener('waiting', handleWaiting);
+    audio.addEventListener('playing', handlePlaying);
 
     return () => {
       audio.removeEventListener('timeupdate', handleTimeUpdate);
@@ -128,8 +171,10 @@ const MusicPlayer = () => {
       audio.removeEventListener('canplay', handleCanPlay);
       audio.removeEventListener('error', handleError);
       audio.removeEventListener('loadstart', handleLoadStart);
+      audio.removeEventListener('waiting', handleWaiting);
+      audio.removeEventListener('playing', handlePlaying);
     };
-  }, [volume, isMuted]);
+  }, [volume, isMuted, tryNextSource]);
 
   // Play / Pause
   const togglePlay = useCallback(async () => {
@@ -142,6 +187,19 @@ const MusicPlayer = () => {
         setIsPlaying(false);
       } else {
         audio.volume = isMuted ? 0 : volume;
+        
+        // Wait for audio to be ready
+        if (audio.readyState < 2) {
+          setIsLoading(true);
+          await new Promise((resolve, reject) => {
+            const timeout = setTimeout(() => reject(new Error('Timeout')), 10000);
+            audio.addEventListener('canplay', () => {
+              clearTimeout(timeout);
+              resolve();
+            }, { once: true });
+          });
+        }
+        
         await audio.play();
         setIsPlaying(true);
         setError(null);
@@ -149,7 +207,8 @@ const MusicPlayer = () => {
     } catch (err) {
       console.log('Audio play failed:', err);
       setIsPlaying(false);
-      setError('Failed to play music');
+      setError('Failed to play music. Click play again.');
+      setIsLoading(false);
     }
   }, [isPlaying, volume, isMuted]);
 
@@ -190,13 +249,16 @@ const MusicPlayer = () => {
 
   return (
     <>
-      {/* Hidden audio element */}
+      {/* Hidden audio element with multiple sources */}
       <audio 
         ref={audioRef} 
-        src={TRACK.file} 
         preload="auto"
-        crossOrigin="anonymous"
-      />
+      >
+        {TRACK.files.map((file, index) => (
+          <source key={index} src={file} type="audio/mpeg" />
+        ))}
+        Your browser does not support the audio element.
+      </audio>
 
       {/* Initial prompt bubble */}
       {showPrompt && (
@@ -254,9 +316,11 @@ const MusicPlayer = () => {
             fontSize: '12px', 
             textAlign: 'center', 
             padding: '8px',
-            marginBottom: '8px'
+            marginBottom: '8px',
+            backgroundColor: 'rgba(255, 107, 107, 0.1)',
+            borderRadius: '4px'
           }}>
-            {error}
+            ⚠️ {error}
           </div>
         )}
 
@@ -268,7 +332,7 @@ const MusicPlayer = () => {
             opacity: 0.7,
             marginBottom: '8px'
           }}>
-            Loading music...
+            ⏳ Loading music...
           </div>
         )}
 
@@ -290,13 +354,13 @@ const MusicPlayer = () => {
           </div>
         </div>
 
-        {/* Controls — only play/pause, no next/prev needed */}
+        {/* Controls */}
         <div className="music-controls">
           <button
             className={`play-btn ${isPlaying ? 'active' : ''}`}
             onClick={togglePlay}
             title={isPlaying ? 'Pause' : 'Play'}
-            disabled={isLoading}
+            disabled={isLoading && !isPlaying}
           >
             {isPlaying ? <FaPause /> : <FaPlay />}
           </button>
