@@ -7,7 +7,7 @@ require('dotenv').config();
 const app = express();
 
 // ✅ CORS configuration
-app.use(cors({
+/*app.use(cors({
   origin: [
     'http://localhost:5173', // local Vite dev
     'http://localhost:3000', // local CRA dev (if used)
@@ -15,7 +15,9 @@ app.use(cors({
     'https://subashsankar99.github.io/wedding-invitation'
   ],
   credentials: true,
-}));
+}));*/
+
+app.use(cors({ origin: '*', credentials: true }));
 
 app.use(express.json());
 
