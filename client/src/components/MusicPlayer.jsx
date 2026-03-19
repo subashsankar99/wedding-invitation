@@ -9,11 +9,11 @@ import {
 } from 'react-icons/fa';
 import './MusicPlayer.css';
 
-// Single track only
+// Single track with GitHub Release URL
 const TRACK = {
   name: 'Shehnai',
   artist: 'Wedding Classic',
-  file: '/audio/shehnai.mp3',
+  file: 'https://github.com/subashsankar99/wedding-invitation/releases/download/v1.0/shehnai.mp3',
   emoji: '🎺'
 };
 
@@ -28,6 +28,8 @@ const MusicPlayer = () => {
   const [currentTime, setCurrentTime] = useState('0:00');
   const [duration, setDuration] = useState('0:00');
   const [showPrompt, setShowPrompt] = useState(true);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState(null);
 
   // Format time helper
   const formatTime = (seconds) => {
@@ -50,9 +52,11 @@ const MusicPlayer = () => {
         await audio.play();
         setIsPlaying(true);
         setShowPrompt(false);
+        setIsLoading(false);
       } catch (err) {
         console.log('Autoplay blocked by browser, waiting for interaction…');
         setIsPlaying(false);
+        setIsLoading(false);
 
         const startOnInteraction = async () => {
           try {
@@ -93,14 +97,37 @@ const MusicPlayer = () => {
 
     const handleLoadedMetadata = () => {
       setDuration(formatTime(audio.duration));
+      setIsLoading(false);
+    };
+
+    const handleCanPlay = () => {
+      setIsLoading(false);
+      setError(null);
+    };
+
+    const handleError = (e) => {
+      console.error('Audio loading error:', e);
+      setError('Failed to load music. Please check your connection.');
+      setIsLoading(false);
+      setIsPlaying(false);
+    };
+
+    const handleLoadStart = () => {
+      setIsLoading(true);
     };
 
     audio.addEventListener('timeupdate', handleTimeUpdate);
     audio.addEventListener('loadedmetadata', handleLoadedMetadata);
+    audio.addEventListener('canplay', handleCanPlay);
+    audio.addEventListener('error', handleError);
+    audio.addEventListener('loadstart', handleLoadStart);
 
     return () => {
       audio.removeEventListener('timeupdate', handleTimeUpdate);
       audio.removeEventListener('loadedmetadata', handleLoadedMetadata);
+      audio.removeEventListener('canplay', handleCanPlay);
+      audio.removeEventListener('error', handleError);
+      audio.removeEventListener('loadstart', handleLoadStart);
     };
   }, [volume, isMuted]);
 
@@ -117,10 +144,12 @@ const MusicPlayer = () => {
         audio.volume = isMuted ? 0 : volume;
         await audio.play();
         setIsPlaying(true);
+        setError(null);
       }
     } catch (err) {
       console.log('Audio play failed:', err);
       setIsPlaying(false);
+      setError('Failed to play music');
     }
   }, [isPlaying, volume, isMuted]);
 
@@ -162,7 +191,12 @@ const MusicPlayer = () => {
   return (
     <>
       {/* Hidden audio element */}
-      <audio ref={audioRef} src={TRACK.file} preload="auto" />
+      <audio 
+        ref={audioRef} 
+        src={TRACK.file} 
+        preload="auto"
+        crossOrigin="anonymous"
+      />
 
       {/* Initial prompt bubble */}
       {showPrompt && (
@@ -182,13 +216,13 @@ const MusicPlayer = () => {
 
       {/* Floating music button */}
       <button
-        className={`music-fab ${isPlaying ? 'playing' : ''}`}
+        className={`music-fab ${isPlaying ? 'playing' : ''} ${isLoading ? 'loading' : ''}`}
         onClick={togglePanel}
         title="Toggle Music Player"
       >
         <FaMusic className="music-fab-icon" />
 
-        {isPlaying && (
+        {isPlaying && !isLoading && (
           <div className="audio-waves">
             <span className="wave wave-1"></span>
             <span className="wave wave-2"></span>
@@ -212,6 +246,31 @@ const MusicPlayer = () => {
             <p className="track-artist">{TRACK.artist}</p>
           </div>
         </div>
+
+        {/* Error message */}
+        {error && (
+          <div className="error-message" style={{ 
+            color: '#ff6b6b', 
+            fontSize: '12px', 
+            textAlign: 'center', 
+            padding: '8px',
+            marginBottom: '8px'
+          }}>
+            {error}
+          </div>
+        )}
+
+        {/* Loading indicator */}
+        {isLoading && (
+          <div className="loading-message" style={{ 
+            textAlign: 'center', 
+            fontSize: '12px', 
+            opacity: 0.7,
+            marginBottom: '8px'
+          }}>
+            Loading music...
+          </div>
+        )}
 
         {/* Progress bar */}
         <div className="progress-container" onClick={handleProgressClick}>
@@ -237,6 +296,7 @@ const MusicPlayer = () => {
             className={`play-btn ${isPlaying ? 'active' : ''}`}
             onClick={togglePlay}
             title={isPlaying ? 'Pause' : 'Play'}
+            disabled={isLoading}
           >
             {isPlaying ? <FaPause /> : <FaPlay />}
           </button>
