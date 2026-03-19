@@ -9,11 +9,14 @@ import {
 } from 'react-icons/fa';
 import './MusicPlayer.css';
 
+// ✅ Use base URL for GitHub Pages compatibility
+const BASE_URL = import.meta.env.BASE_URL || '/';
+
 const TRACK = {
   name: 'Shehnai',
   artist: 'Wedding Classic',
-  // ✅ Direct GitHub Release URL
-  file: 'https://github.com/subashsankar99/wedding-invitation/releases/download/v1.0/shehnai.mp3',
+  // ✅ This resolves to /wedding-invitation/audio/shehnai.mp3 on GitHub Pages
+  file: `${BASE_URL}audio/shehnai.mp3`,
   emoji: '🎺'
 };
 
@@ -37,7 +40,6 @@ const MusicPlayer = () => {
     return `${mins}:${secs.toString().padStart(2, '0')}`;
   };
 
-  // ─── Audio event listeners ───
   useEffect(() => {
     const audio = audioRef.current;
     if (!audio) return;
@@ -55,11 +57,11 @@ const MusicPlayer = () => {
       setDuration(formatTime(audio.duration));
       setIsLoaded(true);
       setError(null);
-      console.log('✅ Audio metadata loaded. Duration:', formatTime(audio.duration));
+      console.log('✅ Audio loaded! Duration:', formatTime(audio.duration));
     };
 
     const handleCanPlayThrough = () => {
-      console.log('✅ Audio ready to play through');
+      console.log('✅ Audio ready to play');
       setIsLoaded(true);
       setError(null);
     };
@@ -67,14 +69,14 @@ const MusicPlayer = () => {
     const handleError = () => {
       const errorCode = audio.error?.code;
       const errorMessages = {
-        1: 'Audio loading was aborted.',
-        2: 'Network error while loading audio. Check your connection.',
-        3: 'Audio decoding failed. The file may be corrupted.',
-        4: 'Audio file not found or format not supported.'
+        1: 'Audio loading aborted.',
+        2: 'Network error loading audio.',
+        3: 'Audio decoding failed.',
+        4: 'Audio file not found. Check deployment.'
       };
-
-      const message = errorMessages[errorCode] || 'Unknown audio error occurred.';
+      const message = errorMessages[errorCode] || 'Unknown audio error.';
       console.error(`❌ Audio error (code ${errorCode}):`, message);
+      console.error('   Tried URL:', TRACK.file);
       setError(message);
       setIsPlaying(false);
       setIsLoaded(false);
@@ -93,7 +95,6 @@ const MusicPlayer = () => {
     };
   }, []);
 
-  // ─── Auto-play attempt (only after loaded) ───
   useEffect(() => {
     if (!isLoaded) return;
 
@@ -116,17 +117,12 @@ const MusicPlayer = () => {
             setIsPlaying(true);
             setShowPrompt(false);
           } catch (e) {
-            console.error('Failed to play on interaction:', e.message);
+            console.error('Play failed:', e.message);
           }
         };
 
         window.addEventListener('click', playOnInteraction, { once: true });
         window.addEventListener('touchstart', playOnInteraction, { once: true });
-
-        return () => {
-          window.removeEventListener('click', playOnInteraction);
-          window.removeEventListener('touchstart', playOnInteraction);
-        };
       }
     };
 
@@ -137,21 +133,6 @@ const MusicPlayer = () => {
   const togglePlay = async () => {
     const audio = audioRef.current;
     setShowPrompt(false);
-
-    if (!isLoaded) {
-      try {
-        audio.load();
-        await new Promise((resolve, reject) => {
-          audio.addEventListener('canplaythrough', resolve, { once: true });
-          audio.addEventListener('error', reject, { once: true });
-          setTimeout(reject, 5000);
-        });
-        setIsLoaded(true);
-      } catch (e) {
-        setError('Audio failed to load. Please try again.');
-        return;
-      }
-    }
 
     try {
       if (isPlaying) {
@@ -164,7 +145,7 @@ const MusicPlayer = () => {
       }
     } catch (err) {
       console.error('Play error:', err);
-      setError('Failed to play. Click again.');
+      setError('Tap again to play music.');
     }
   };
 
@@ -204,10 +185,9 @@ const MusicPlayer = () => {
 
   return (
     <>
-      {/* ✅ crossOrigin needed for external URLs */}
-      <audio ref={audioRef} crossOrigin="anonymous" preload="auto">
+      {/* ✅ NO crossOrigin needed - same origin on GitHub Pages */}
+      <audio ref={audioRef} preload="auto">
         <source src={TRACK.file} type="audio/mpeg" />
-        Your browser does not support the audio element.
       </audio>
 
       {showPrompt && !error && (
