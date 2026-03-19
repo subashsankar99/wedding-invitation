@@ -14,57 +14,10 @@ const ScratchCard = ({ revealData }) => {
 
   const REVEAL_THRESHOLD = 50;
 
-  // ✅ Resize + redraw canvas
-  useEffect(() => {
-    const handleResize = () => {
-      setWindowSize({
-        width: window.innerWidth,
-        height: window.innerHeight
-      });
+  // ✅ Draw scratch layer
+  const drawCanvas = useCallback(() => {
+    if (isRevealed) return;
 
-      drawCanvas();
-    };
-
-    window.addEventListener('resize', handleResize);
-    return () => window.removeEventListener('resize', handleResize);
-  }, []);
-
-  // ✅ Initial draw
-  useEffect(() => {
-    drawCanvas();
-  }, []);
-
-  // ✅ Prevent touch freeze after scroll
-  useEffect(() => {
-    const canvas = canvasRef.current;
-
-    const preventScroll = (e) => {
-      if (isScratching) e.preventDefault();
-    };
-
-    if (canvas) {
-      canvas.addEventListener('touchmove', preventScroll, { passive: false });
-    }
-
-    return () => {
-      if (canvas) {
-        canvas.removeEventListener('touchmove', preventScroll);
-      }
-    };
-  }, [isScratching]);
-
-  // ✅ Reset scratching on scroll (FIX FREEZE BUG)
-  useEffect(() => {
-    const handleScroll = () => {
-      setIsScratching(false);
-    };
-
-    window.addEventListener('scroll', handleScroll);
-    return () => window.removeEventListener('scroll', handleScroll);
-  }, []);
-
-  // ✅ Draw function (reusable)
-  const drawCanvas = () => {
     const canvas = canvasRef.current;
     if (!canvas) return;
 
@@ -101,15 +54,80 @@ const ScratchCard = ({ revealData }) => {
 
     ctx.font =
       window.innerWidth <= 480
-        ? 'bold 18px Playfair Display, Georgia, serif'
-        : 'bold 22px Playfair Display, Georgia, serif';
+        ? 'bold 18px serif'
+        : 'bold 22px serif';
 
     ctx.fillStyle = '#8B6914';
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
-    ctx.fillText('✨ Scratch to Reveal ✨', canvas.width / 2, canvas.height / 2 - 15);
-  };
+    ctx.fillText('✨ Scratch to Reveal ✨', canvas.width / 2, canvas.height / 2);
+  }, [isRevealed]);
 
+  // ✅ Initial draw
+  useEffect(() => {
+    drawCanvas();
+  }, [drawCanvas]);
+
+  // ✅ Resize fix
+  useEffect(() => {
+    const handleResize = () => {
+      setWindowSize({
+        width: window.innerWidth,
+        height: window.innerHeight
+      });
+      drawCanvas();
+    };
+
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, [drawCanvas]);
+
+  // ✅ FIX: restore canvas when coming back into view
+  useEffect(() => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        if (entry.isIntersecting) {
+          const ctx = canvas.getContext('2d');
+
+          if (isRevealed) {
+            // keep revealed state
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+          } else {
+            drawCanvas();
+          }
+        }
+      },
+      { threshold: 0.5 }
+    );
+
+    observer.observe(canvas);
+
+    return () => observer.disconnect();
+  }, [isRevealed, drawCanvas]);
+
+  // ✅ Prevent touch scroll interference
+  useEffect(() => {
+    const canvas = canvasRef.current;
+
+    const preventScroll = (e) => {
+      if (isScratching) e.preventDefault();
+    };
+
+    if (canvas) {
+      canvas.addEventListener('touchmove', preventScroll, { passive: false });
+    }
+
+    return () => {
+      if (canvas) {
+        canvas.removeEventListener('touchmove', preventScroll);
+      }
+    };
+  }, [isScratching]);
+
+  // ✅ Calculate scratched %
   const calculateScratchPercentage = useCallback(() => {
     const canvas = canvasRef.current;
     const ctx = canvas.getContext('2d');
@@ -126,6 +144,7 @@ const ScratchCard = ({ revealData }) => {
     return (transparentPixels / totalPixels) * 100;
   }, []);
 
+  // ✅ Scratch logic
   const scratch = useCallback(
     (x, y) => {
       if (isRevealed) return;
@@ -158,27 +177,27 @@ const ScratchCard = ({ revealData }) => {
       const percentage = calculateScratchPercentage();
       setScratchPercentage(percentage);
 
-      if (percentage > REVEAL_THRESHOLD && !isRevealed) {
+      if (percentage > REVEAL_THRESHOLD) {
         setIsRevealed(true);
         setScratchPercentage(100);
 
         setTimeout(() => {
+          const ctx = canvas.getContext('2d');
           ctx.clearRect(0, 0, canvas.width, canvas.height);
-        }, 180);
+        }, 100);
       }
     },
     [isRevealed, calculateScratchPercentage]
   );
 
-  // ✅ Mouse handlers
+  // ✅ Mouse
   const handleMouseDown = () => setIsScratching(true);
   const handleMouseUp = () => setIsScratching(false);
-
   const handleMouseMove = (e) => {
     if (isScratching) scratch(e.clientX, e.clientY);
   };
 
-  // ✅ FIXED TOUCH HANDLERS (CRITICAL)
+  // ✅ Touch (fixed)
   const handleTouchStart = (e) => {
     setIsScratching(true);
     const touch = e.touches[0];
@@ -220,6 +239,7 @@ const ScratchCard = ({ revealData }) => {
           <canvas
             ref={canvasRef}
             className="scratch-canvas"
+            style={{ pointerEvents: isRevealed ? 'none' : 'auto' }}
             onMouseDown={handleMouseDown}
             onMouseUp={handleMouseUp}
             onMouseMove={handleMouseMove}
@@ -251,7 +271,6 @@ const ScratchCard = ({ revealData }) => {
           numberOfPieces={300}
           recycle={false}
           gravity={0.15}
-          colors={['#D4AF37', '#FF6B6B', '#FF69B4', '#FFD700', '#FFF']}
         />
       )}
     </section>
