@@ -66,21 +66,13 @@ const ScratchCard = ({ revealData }) => {
     return () => window.removeEventListener('resize', handleResize);
   }, []);
 
- useEffect(() => {
-  const canvas = canvasRef.current;
+    
+     useEffect(() => {
+    const canvas = canvasRef.current;
+    const ctx = canvas.getContext('2d');
 
-  const preventScroll = (e) => {
-    if (isScratching) {
-      e.preventDefault();
-    }
-  };
-
-  canvas.addEventListener('touchmove', preventScroll, { passive: false });
-
-  return () => {
-    canvas.removeEventListener('touchmove', preventScroll);
-  };
-}, [isScratching]);
+    canvas.width = canvas.offsetWidth;
+    canvas.height = canvas.offsetHeight;
 
     const gradient = ctx.createLinearGradient(0, 0, canvas.width, canvas.height);
     gradient.addColorStop(0, '#D4AF37');
