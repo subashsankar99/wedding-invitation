@@ -12,6 +12,7 @@ app.use(cors({
     'http://localhost:5173', // local Vite dev
     'http://localhost:3000', // local CRA dev (if used)
     'https://subashsankar99.github.io', // replace with your actual GitHub Pages URL
+    'https://subashsankar99.github.io/wedding-invitation'
   ],
   credentials: true,
 }));
