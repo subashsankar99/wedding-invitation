@@ -1,8 +1,0 @@
-title: Wedding Invitation
-exclude:
-  - server/
-  - node_modules/
-  - vendor/
-  - package.json
-  - package-lock.json
-  - README.md
