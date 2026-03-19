@@ -4,7 +4,8 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { FaPaperPlane } from 'react-icons/fa';
 import './QueryForm.css';
 
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
+// Use live backend URL from .env
+const API_URL = import.meta.env.VITE_API_URL || 'https://wedding-invitation-90op.onrender.com/api';
 
 const QUERY_TYPES = ['Venue', 'Accommodation', 'Dress Code', 'Food', 'Travel', 'Other'];
 
@@ -31,6 +32,7 @@ const QueryForm = () => {
     setError('');
 
     try {
+      // Send form data to live backend
       await axios.post(`${API_URL}/queries`, formData);
       setShowSuccess(true);
       setFormData({
@@ -43,6 +45,7 @@ const QueryForm = () => {
       setTimeout(() => setShowSuccess(false), 4000);
     } catch (err) {
       setError(err.response?.data?.message || 'Something went wrong. Please try again.');
+      console.error(err);
     } finally {
       setSubmitting(false);
     }
@@ -134,13 +137,9 @@ const QueryForm = () => {
             className="query-submit-btn"
             disabled={submitting}
           >
-            {submitting ? (
-              '📤 Sending...'
-            ) : (
-              <>
-                <FaPaperPlane /> Send Query
-              </>
-            )}
+            {submitting ? '📤 Sending...' : <>
+              <FaPaperPlane /> Send Query
+            </>}
           </button>
         </form>
 
